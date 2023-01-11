@@ -245,6 +245,8 @@ server {
 EOF
 )
 
+export DEBIAN_FRONTEND=noninteractive
+
 #update apt repositories
 wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo apt-key add -
 
@@ -262,8 +264,8 @@ sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys EB3E94ADB
 sudo apt-get install apt-transport-https
 sudo apt-get update --yes
 
-#install openjdk8
-sudo apt-get install openjdk-8-jre openjdk-8-jre-headless openjdk-8-jdk --yes
+#install openjdk11
+sudo apt-get install openjdk-11-jre openjdk-11-jre-headless openjdk-11-jdk --yes
 
 #install jenkins
 if [[ ${jenkins_release_type} == 'verified' ]]; then
