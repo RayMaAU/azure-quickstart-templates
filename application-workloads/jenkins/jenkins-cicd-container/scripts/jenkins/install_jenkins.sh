@@ -8,7 +8,6 @@ Command
 Arguments
   --jenkins_fqdn|-jf       [Required] : Jenkins FQDN
   --cluster_name|-cn       [Required] : Jenkins cluster name
-  --cluster_version|-cv    [Required] : Jenkins cluster version
   --vm_private_ip|-pi                 : The VM private ip used to configure Jenkins URL. If missing, jenkins_fqdn will be used instead
   --jenkins_release_type|-jrt         : The Jenkins release type (LTS or weekly or verified). By default it's set to LTS
   --jenkins_version_location|-jvl     : Url used to specify the version of Jenkins.
@@ -76,10 +75,6 @@ do
       ;;
     --cluster_name|-cn)
       cluster_name="$1"
-      shift
-      ;;
-    --cluster_version|-cv)
-      cluster_version="$1"
       shift
       ;;
     --vm_private_ip|-pi)
@@ -481,5 +476,5 @@ sudo service nginx restart
 #install common tools
 sudo apt-get install git --yes
 sudo apt-get install azure-cli --yes
-sudo az aks install-cli --client-version ${cluster_version}
+sudo az aks install-cli
 sudo apt-get install xmlstarlet

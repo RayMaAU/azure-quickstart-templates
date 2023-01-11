@@ -47,9 +47,6 @@
     "kubernetesClusterName": {
       "type": "string"
     },
-    "kubernetesVersion": {
-      "type": "string"
-    },
     "_artifactsLocation": {
       "type": "string"
     },
@@ -205,7 +202,7 @@
               ]
             },
             "protectedSettings": {
-              "commandToExecute": "[concat('./jenkins-acr-aks.sh -jf \"', reference(variables('publicIPAddressName')).dnsSettings.fqdn, '\" -u \"', parameters('linuxAdminUsername') , '\" -g \"', parameters('gitRepository') , '\" -r \"https://', parameters('acrServer'), '\" -ru \"', parameters('acrUsername'), '\" -rp \"', parameters('acrPassword'), '\" -subid \"', subscription().subscriptionId, '\" -tid \"', subscription().tenantId, '\" -spid \"', parameters('spClientId'), '\" -ss \"', parameters('spClientSecret'), '\" -gn \"', parameters('kubernetesResourceGroupName'),  '\" -cn \"', parameters('kubernetesClusterName'), '\" -cv \"', parameters('kubernetesVersion') , '\" -mu \"', parameters('mongoDbURI'), '\" -al \"', parameters('_artifactsLocation'), '\" -st \"', parameters('_artifactsLocationSasToken'), '\"' )]"
+              "commandToExecute": "[concat('./jenkins-acr-aks.sh -jf \"', reference(variables('publicIPAddressName')).dnsSettings.fqdn, '\" -u \"', parameters('linuxAdminUsername') , '\" -g \"', parameters('gitRepository') , '\" -r \"https://', parameters('acrServer'), '\" -ru \"', parameters('acrUsername'), '\" -rp \"', parameters('acrPassword'), '\" -subid \"', subscription().subscriptionId, '\" -tid \"', subscription().tenantId, '\" -spid \"', parameters('spClientId'), '\" -ss \"', parameters('spClientSecret'), '\" -gn \"', parameters('kubernetesResourceGroupName'),  '\" -cn \"', parameters('kubernetesClusterName'), '\" -mu \"', parameters('mongoDbURI'), '\" -al \"', parameters('_artifactsLocation'), '\" -st \"', parameters('_artifactsLocationSasToken'), '\"' )]"
             }
           }
         }
