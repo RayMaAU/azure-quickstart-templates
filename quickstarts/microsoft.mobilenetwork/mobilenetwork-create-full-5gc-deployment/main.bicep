@@ -16,44 +16,38 @@ param siteName string = 'myExampleSite'
 @description('The name of the service')
 param serviceName string = 'Allow-all-traffic'
 
-@description('An array containing properties of the SIM(s) you wish to create')
-param simResources array = []
-
 @description('The name of the SIM policy')
 param simPolicyName string = 'Default-policy'
 
 @description('The name of the slice')
 param sliceName string = 'slice-1'
 
-@description('The name of the control plane interface on the access network. In 5G networks this is called the N2 interface whereas in 4G networks this is called the S1-MME interface. This should match one of the interfaces configured on your Azure Stack Edge machine.')
+@description('The name for the SIM group.')
+param simGroupName string = ''
+
+@description('A unversioned key vault key to encrypt the SIM data that belongs to this SIM group. For example: https://contosovault.vault.azure.net/keys/azureKey.')
+param existingEncryptionKeyUrl string = ''
+
+@description('User-assigned identity is an identity in Azure Active Directory that can be used to give access to other Azure resource such as Azure Key Vault. This identity should have Get, Wrap key, and Unwrap key permissions on the key vault.')
+param existingUserAssignedIdentityResourceId string = ''
+
+@description('An array containing properties of the SIM(s) you wish to create. See [Provision proxy SIM(s)](https://docs.microsoft.com/en-gb/azure/private-5g-core/provision-sims-azure-portal) for a full description of the required properties and their format.')
+param simResources array = []
+
+@description('The resource ID of the Azure Stack Edge device to deploy to')
+param azureStackEdgeDevice string = ''
+
+@description('The virtual network name on port 5 on your Azure Stack Edge Pro device corresponding to the control plane interface on the access network. For 5G, this interface is the N2 interface; for 4G, it\'s the S1-MME interface.')
 param controlPlaneAccessInterfaceName string = ''
 
 @description('The IP address of the control plane interface on the access network. In 5G networks this is called the N2 interface whereas in 4G networks this is called the S1-MME interface.')
-param controlPlaneAccessIpAddress string
+param controlPlaneAccessIpAddress string = ''
 
-@description('The logical name of the user plane interface on the access network. In 5G networks this is called the N3 interface whereas in 4G networks this is called the S1-U interface. This should match one of the interfaces configured on your Azure Stack Edge machine.')
+@description('The virtual network name on port 5 on your Azure Stack Edge Pro device corresponding to the user plane interface on the access network. For 5G, this interface is the N3 interface; for 4G, it\'s the S1-U interface.')
 param userPlaneAccessInterfaceName string = ''
 
-@description('The IP address of the user plane interface on the access network. In 5G networks this is called the N3 interface whereas in 4G networks this is called the S1-U interface.')
-param userPlaneAccessInterfaceIpAddress string
-
-@description('The network address of the access subnet in CIDR notation')
-param accessSubnet string
-
-@description('The access subnet default gateway')
-param accessGateway string
-
-@description('The logical name of the user plane interface on the data network. In 5G networks this is called the N6 interface whereas in 4G networks this is called the SGi interface. This should match one of the interfaces configured on your Azure Stack Edge machine.')
+@description('The virtual network name on port 6 on your Azure Stack Edge Pro device corresponding to the user plane interface on the data network. For 5G, this interface is the N6 interface; for 4G, it\'s the SGi interface.')
 param userPlaneDataInterfaceName string = ''
-
-@description('The IP address of the user plane interface on the data network. In 5G networks this is called the N6 interface whereas in 4G networks this is called the SGi interface.')
-param userPlaneDataInterfaceIpAddress string
-
-@description('The network address of the data subnet in CIDR notation')
-param userPlaneDataInterfaceSubnet string
-
-@description('The data subnet default gateway')
-param userPlaneDataInterfaceGateway string
 
 @description('The network address of the subnet from which dynamic IP addresses must be allocated to UEs, given in CIDR notation. Optional if userEquipmentStaticAddressPoolPrefix is specified. If both are specified, they must be the same size and not overlap.')
 param userEquipmentAddressPoolPrefix string = ''
@@ -65,6 +59,10 @@ param userEquipmentStaticAddressPoolPrefix string = ''
 param dataNetworkName string = 'internet'
 
 @description('The mode in which the packet core instance will run')
+@allowed([
+  'EPC'
+  '5GC'
+])
 param coreNetworkTechnology string = '5GC'
 
 @description('Whether or not Network Address and Port Translation (NAPT) should be enabled for this data network')
@@ -74,10 +72,14 @@ param coreNetworkTechnology string = '5GC'
 ])
 param naptEnabled string
 
+@description('A list of DNS servers that UEs on this data network will use')
+param dnsAddresses array
+
 @description('The resource ID of the customLocation representing the ASE device where the packet core will be deployed. If this parameter is not specified then the 5G core will be created but will not be deployed to an ASE. [Collect custom location information](https://docs.microsoft.com/en-gb/azure/private-5g-core/collect-required-information-for-a-site#collect-custom-location-information) explains which value to specify here.')
 param customLocation string = ''
 
-resource exampleMobileNetwork 'Microsoft.MobileNetwork/mobileNetworks@2022-03-01-preview' = {
+#disable-next-line BCP081
+resource exampleMobileNetwork 'Microsoft.MobileNetwork/mobileNetworks@2022-11-01' = {
   name: mobileNetworkName
   location: location
   properties: {
@@ -86,169 +88,192 @@ resource exampleMobileNetwork 'Microsoft.MobileNetwork/mobileNetworks@2022-03-01
       mnc: mobileNetworkCode
     }
   }
+}
 
-  resource exampleDataNetwork 'dataNetworks@2022-03-01-preview' = {
-    name: dataNetworkName
-    location: location
-    properties: {}
-  }
+#disable-next-line BCP081
+resource exampleSite 'Microsoft.MobileNetwork/mobileNetworks/sites@2022-11-01' = {
+  parent: exampleMobileNetwork
+  name: siteName
+  location: location
+}
 
-  resource exampleSlice 'slices@2022-03-01-preview' = {
-    name: sliceName
-    location: location
-    properties: {
-      snssai: {
-        sst: 1
-      }
-    }
-  }
+#disable-next-line BCP081
+resource exampleDataNetwork 'Microsoft.MobileNetwork/mobileNetworks/dataNetworks@2022-11-01' = {
+  parent: exampleMobileNetwork
+  name: dataNetworkName
+  location: location
+  properties: {}
+}
 
-  resource exampleService 'services@2022-03-01-preview' = {
-    name: serviceName
-    location: location
-    properties: {
-      servicePrecedence: 253
-      serviceQosPolicy: {
-        maximumBitRate: {
-          uplink: '2 Gbps'
-          downlink: '2 Gbps'
-        }
-      }
-      pccRules: [
-        {
-          ruleName: 'All-traffic'
-          rulePrecedence: 253
-          trafficControl: 'Enabled'
-          serviceDataFlowTemplates: [
-            {
-              templateName: 'Any-traffic'
-              protocol: [
-                'ip'
-              ]
-              direction: 'Bidirectional'
-              remoteIpList: [
-                'any'
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  }
-
-  resource exampleSimPolicy 'simPolicies@2022-03-01-preview' = {
-    name: simPolicyName
-    location: location
-    properties: {
-      ueAmbr: {
-        uplink: '2 Gbps'
-        downlink: '2 Gbps'
-      }
-      defaultSlice: {
-        id: exampleSlice.id
-      }
-      sliceConfigurations: [
-        {
-          slice: {
-            id: exampleSlice.id
-          }
-          defaultDataNetwork: {
-            id: exampleDataNetwork.id
-          }
-          dataNetworkConfigurations: [
-            {
-              dataNetwork: {
-                id: exampleDataNetwork.id
-              }
-              sessionAmbr: {
-                uplink: '2 Gbps'
-                downlink: '2 Gbps'
-              }
-              allowedServices: [
-                {
-                  id: exampleService.id
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  }
-
-  resource exampleSite 'sites@2022-03-01-preview' = {
-    name: siteName
-    location: location
-    properties: {
-      networkFunctions: [
-        {
-          id: examplePacketCoreControlPlane.id
-        }
-        {
-          id: examplePacketCoreControlPlane::examplePacketCoreDataPlane.id
-        }
-      ]
+#disable-next-line BCP081
+resource exampleSlice 'Microsoft.MobileNetwork/mobileNetworks/slices@2022-11-01' = {
+  parent: exampleMobileNetwork
+  name: sliceName
+  location: location
+  properties: {
+    snssai: {
+      sst: 1
     }
   }
 }
 
-resource exampleSimResources 'Microsoft.MobileNetwork/sims@2022-03-01-preview' = [for item in simResources: {
-  name: item.simName
+#disable-next-line BCP081
+resource exampleService 'Microsoft.MobileNetwork/mobileNetworks/services@2022-11-01' = {
+  parent: exampleMobileNetwork
+  name: serviceName
   location: location
   properties: {
-    integratedCircuitCardIdentifier: item.integratedCircuitCardIdentifier
-    internationalMobileSubscriberIdentity: item.internationalMobileSubscriberIdentity
-    authenticationKey: item.authenticationKey
-    operatorKeyCode: item.operatorKeyCode
-    deviceType: item.deviceType
+    servicePrecedence: 253
+    pccRules: [
+      {
+        ruleName: 'All-traffic'
+        rulePrecedence: 253
+        trafficControl: 'Enabled'
+        serviceDataFlowTemplates: [
+          {
+            templateName: 'Any-traffic'
+            protocol: [
+              'ip'
+            ]
+            direction: 'Bidirectional'
+            remoteIpList: [
+              'any'
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
+
+#disable-next-line BCP081
+resource exampleSimPolicy 'Microsoft.MobileNetwork/mobileNetworks/simPolicies@2022-11-01' = {
+  parent: exampleMobileNetwork
+  name: simPolicyName
+  location: location
+  properties: {
+    ueAmbr: {
+      uplink: '2 Gbps'
+      downlink: '2 Gbps'
+    }
+    defaultSlice: {
+      id: exampleSlice.id
+    }
+    sliceConfigurations: [
+      {
+        slice: {
+          id: exampleSlice.id
+        }
+        defaultDataNetwork: {
+          id: exampleDataNetwork.id
+        }
+        dataNetworkConfigurations: [
+          {
+            dataNetwork: {
+              id: exampleDataNetwork.id
+            }
+            sessionAmbr: {
+              uplink: '2 Gbps'
+              downlink: '2 Gbps'
+            }
+            allowedServices: [
+              {
+                id: exampleService.id
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
+
+#disable-next-line BCP081
+resource exampleSimGroupResource 'Microsoft.MobileNetwork/simGroups@2022-11-01' = if (!empty(simGroupName)) {
+  name: empty(simGroupName) ? 'placeHolderForValidation' : simGroupName
+  location: location
+  properties: {
     mobileNetwork: {
       id: exampleMobileNetwork.id
     }
-    simPolicy: {
-      id: exampleMobileNetwork::exampleSimPolicy.id
+    encryptionKey: {
+        keyUrl: existingEncryptionKeyUrl
     }
   }
-}]
+  identity: !empty(existingUserAssignedIdentityResourceId) ? {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${existingUserAssignedIdentityResourceId}': {}
+    }
+  } : {
+    type: 'None'
+  }
 
-resource examplePacketCoreControlPlane 'Microsoft.MobileNetwork/packetCoreControlPlanes@2022-03-01-preview' = {
+  #disable-next-line BCP081
+  resource exampleSimResources 'sims@2022-11-01' = [for item in simResources: {
+    name: item.simName
+    properties: {
+      integratedCircuitCardIdentifier: item.integratedCircuitCardIdentifier
+      internationalMobileSubscriberIdentity: item.internationalMobileSubscriberIdentity
+      authenticationKey: item.authenticationKey
+      operatorKeyCode: item.operatorKeyCode
+      deviceType: item.deviceType
+      simPolicy: {
+        id: exampleSimPolicy.id
+      }
+    }
+  }]
+}
+
+#disable-next-line BCP081
+resource examplePacketCoreControlPlane 'Microsoft.MobileNetwork/packetCoreControlPlanes@2022-11-01' = {
   name: siteName
   location: location
+  dependsOn: [
+    exampleSlice
+  ]
   properties: {
-    mobileNetwork: {
-      id: exampleMobileNetwork.id
-    }
+    sites: [
+      {
+        id: exampleSite.id
+      }
+    ]
+    sku: 'G0'
     coreNetworkTechnology: coreNetworkTechnology
-    customLocation: empty(customLocation) ? null : {
-      id: customLocation
+    platform: {
+      type: 'AKS-HCI'
+      customLocation: empty(customLocation) ? null : {
+        id: customLocation
+      }
+      azureStackEdgeDevice: {
+        id: azureStackEdgeDevice
+      }
+    }
+    localDiagnosticsAccess: {
+      authenticationType: 'Password'
     }
     controlPlaneAccessInterface: {
       ipv4Address: controlPlaneAccessIpAddress
-      ipv4Subnet: accessSubnet
-      ipv4Gateway: accessGateway
       name: controlPlaneAccessInterfaceName
     }
   }
 
-  resource examplePacketCoreDataPlane 'packetCoreDataPlanes@2022-03-01-preview' = {
+  #disable-next-line BCP081
+  resource examplePacketCoreDataPlane 'packetCoreDataPlanes@2022-11-01' = {
     name: siteName
     location: location
     properties: {
       userPlaneAccessInterface: {
-        ipv4Address: userPlaneAccessInterfaceIpAddress
-        ipv4Subnet: accessSubnet
-        ipv4Gateway: accessGateway
         name: userPlaneAccessInterfaceName
       }
     }
 
-    resource exampleAttachedDataNetwork 'attachedDataNetworks@2022-03-01-preview' = {
+    #disable-next-line BCP081
+    resource exampleAttachedDataNetwork 'attachedDataNetworks@2022-11-01' = {
       name: dataNetworkName
       location: location
       properties: {
         userPlaneDataInterface: {
-          ipv4Address: userPlaneDataInterfaceIpAddress
-          ipv4Subnet: userPlaneDataInterfaceSubnet
-          ipv4Gateway: userPlaneDataInterfaceGateway
           name: userPlaneDataInterfaceName
         }
         userEquipmentAddressPoolPrefix: empty(userEquipmentAddressPoolPrefix) ? null : [
@@ -260,6 +285,7 @@ resource examplePacketCoreControlPlane 'Microsoft.MobileNetwork/packetCoreContro
         naptConfiguration: {
           enabled: naptEnabled
         }
+        dnsAddresses: dnsAddresses
       }
     }
   }

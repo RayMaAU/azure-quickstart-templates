@@ -1,4 +1,15 @@
-# Deploy Microsoft Purview with Azure Resource Manager (ARM)
+---
+description: This template will deploy a Microsoft Purview account to a new or existing resource group.
+page_type: sample
+products:
+- azure
+- azure-resource-manager
+urlFragment: azure-purview-deployment
+languages:
+- json
+- bicep
+---
+# Deploy Microsoft Purview account
 
 ![Azure Public Test Date](https://azurequickstartsservice.blob.core.windows.net/badges/quickstarts/microsoft.azurepurview/azure-purview-deployment/PublicLastTestDate.svg)
 ![Azure Public Test Result](https://azurequickstartsservice.blob.core.windows.net/badges/quickstarts/microsoft.azurepurview/azure-purview-deployment/PublicDeployment.svg)
@@ -8,6 +19,8 @@
 
 ![Best Practice Check](https://azurequickstartsservice.blob.core.windows.net/badges/quickstarts/microsoft.azurepurview/azure-purview-deployment/BestPracticeResult.svg)
 ![Cred Scan Check](https://azurequickstartsservice.blob.core.windows.net/badges/quickstarts/microsoft.azurepurview/azure-purview-deployment/CredScanResult.svg)
+![Bicep Version](https://azurequickstartsservice.blob.core.windows.net/badges/quickstarts/microsoft.azurepurview/azure-purview-deployment/BicepVersion.svg)
+
 
 [![Deploy to Azure](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%2Fquickstarts%2Fmicrosoft.azurepurview%2Fazure-purview-deployment%2Fazuredeploy.json)
 
@@ -53,6 +66,8 @@ After your Microsoft Purview account is created, you'll use the Microsoft Purvie
 
 After deployment, the first activities are usually:
 
-* [Create a collection](/azure/purview/quickstart-create-collection)
-* [Register a resource](/azure/purview/azure-purview-connector-overview)
-* [Scan the resource](/azure/purview/concept-scans-and-ingestion)
+* [Create a collection](https://learn.microsoft.com/azure/purview/how-to-create-and-manage-collections)
+* [Register a resource](https://learn.microsoft.com/azure/purview/microsoft-purview-connector-overview)
+* [Scan the resource](https://learn.microsoft.com/azure/purview/concept-scans-and-ingestion)
+
+`Tags: Microsoft.Purview/accounts, SystemAssigned`
